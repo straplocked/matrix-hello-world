@@ -4,6 +4,44 @@ All notable changes to this project are documented here.
 
 ---
 
+## 2026-03-04 — Content & Typography Refinements
+
+### Features
+- Added 20 system error messages to glitch sequences — random error flashes in red (e.g., "SYSTEM APPROXIMATING", "CANNOT LOCK TRACK", "BUFFER OVERFLOW DETECTED") appear between corruption and data reveal
+- Expanded typewriter MESSAGES array from 6 to 20 entries with Matrix-themed quotes ("welcome to the desert of the real", "choice is an illusion", etc.)
+
+### Visual
+- Reduced parallax text layer intensity (data-depth 0.60 → 0.20) for subtler floating effect
+- Shrunk WAKE UP font size (clamp 3/10vw/8rem → 2.5/8vw/6rem)
+- Tightened WAKE UP line-height (1.1 → 0.85)
+- Restored font-weight to bold after iterating through 300/400/500/600
+
+### Technical
+- Current cache buster: `?v=20260304y`
+
+---
+
+## 2026-03-04 — Surveillance & Ambient Effects
+
+### Features
+- Added surveillance display — cycles viewer's real info (IP, location, ISP, browser, OS, GPU, screen, timezone) via ipinfo.io public API
+- Added glitch/error animation on unstable surveillance lines (CPU, RAM, GPU, NETWORK) — signal unstable flash, character corruption, color spasms, blackout flickers, horizontal jitter
+- Added ambient water movement — random wave drops + organic sine-wave swell across entire background surface
+- Doubled ripple size (waveDropRadius 24→48), increased strength (30→40) and persistence (damping 0.985→0.988)
+
+### Security
+- Removed nginx `/api/whoami` endpoint that leaked Docker bridge IP (172.18.0.1)
+- Switched to client-side ipinfo.io API — viewer's browser makes the request directly
+- Updated CSP `connect-src` to allow `https://ipinfo.io`
+- Graceful fallback if ipinfo.io blocked by ad blockers
+
+### Technical
+- Current cache buster: `?v=20260304r`
+- Wave activity skip optimization removed — ambient movement always applies
+- Surveillance data built from browser fingerprint APIs + ipinfo.io geo-IP
+
+---
+
 ## 2026-03-04 — Open Source Release Prep
 
 ### Open Source

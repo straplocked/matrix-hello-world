@@ -190,7 +190,7 @@ body.booting #scanline-sweep {
 }
 
 .main-line {
-    font-size: clamp(3rem, 10vw, 8rem);
+    font-size: clamp(2.5rem, 8vw, 6rem);
     font-weight: bold;
     color: #00ff41;
     text-shadow:
@@ -199,7 +199,7 @@ body.booting #scanline-sweep {
         0 0 40px #00ff41,
         0 0 80px #008f11;
     letter-spacing: 0.3em;
-    line-height: 1.1;
+    line-height: 0.85;
     animation: textGlow 2s ease-in-out infinite alternate;
 }
 

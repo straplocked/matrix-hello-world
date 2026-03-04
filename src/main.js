@@ -13,10 +13,14 @@
         trailLength: 30,
         waveCellSize: 2,
         waveSpeed: 0.45,
-        waveDamping: 0.985,
-        waveDropRadius: 24,
-        waveDropStrength: 30,
+        waveDamping: 0.988,
+        waveDropRadius: 48,
+        waveDropStrength: 40,
         waveStepsPerFrame: 2,
+        ambientDropInterval: 300,
+        ambientDropStrength: 6,
+        ambientDropRadius: 12,
+        ambientSwellScale: 0.4,
         particleCount: 60,
         particleLife: 80,
         holdThreshold: 180,
@@ -30,7 +34,21 @@
         '> the construct is real',
         '> free your mind',
         '> knock knock, neo',
-        '> the matrix has you'
+        '> the matrix has you',
+        '> what is the matrix?',
+        '> everything that has a beginning has an end',
+        '> i know kung fu',
+        '> you have to let it all go',
+        '> welcome to the desert of the real',
+        '> the answer is out there',
+        '> do not try and bend the spoon',
+        '> choice is an illusion',
+        '> i can only show you the door',
+        '> the body cannot live without the mind',
+        '> fate, it seems, is not without a sense of irony',
+        '> some rules can be bent, others can be broken',
+        '> remember, all i am offering is the truth',
+        '> you have been living in a dream world'
     ];
 
     // --- State ---
@@ -221,11 +239,7 @@
     function applyWaveToColumns() {
         var cur = waveBuf[waveIdx];
         // Quick check: any wave activity?
-        var hasWaves = false;
-        for (var i = 0, len = cur.length; i < len; i += 50) {
-            if (Math.abs(cur[i]) > 0.05) { hasWaves = true; break; }
-        }
-        if (!hasWaves) return;
+        // Always apply — ambient waves keep the surface alive
 
         for (var c = 0; c < columns; c++) {
             if (!drops[c]) continue;
@@ -313,6 +327,61 @@
 
         // Impact glow at recent drop sites (fades quickly)
         // Tracked via the drop impact flash array
+    }
+
+    // --- Ambient Water Movement ---
+    // Continuous random perturbations + organic swell to simulate living water surface
+    var ambientTimer = 0;
+    var ambientFrame = 0;
+
+    function ambientWaves() {
+        ambientFrame++;
+        ambientTimer++;
+
+        var cur = waveBuf[waveIdx];
+
+        // Random drops across the surface — like rain hitting water
+        if (ambientTimer >= Math.floor(CONFIG.ambientDropInterval / 16)) {
+            ambientTimer = 0;
+            var px = 50 + Math.random() * (rainCanvas.width - 100);
+            var py = 50 + Math.random() * (rainCanvas.height - 100);
+            var cx = Math.floor(px / CONFIG.waveCellSize);
+            var cy = Math.floor(py / CONFIG.waveCellSize);
+            var radius = CONFIG.ambientDropRadius * (0.6 + Math.random() * 0.8);
+            var strength = CONFIG.ambientDropStrength * (0.5 + Math.random());
+            // Randomly positive or negative for variety
+            if (Math.random() > 0.5) strength = -strength;
+
+            for (var dy = -radius; dy <= radius; dy++) {
+                for (var dx = -radius; dx <= radius; dx++) {
+                    var gx = cx + dx;
+                    var gy = cy + dy;
+                    if (gx < 1 || gx >= waveW - 1 || gy < 1 || gy >= waveH - 1) continue;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= radius) {
+                        var falloff = Math.cos(dist / radius * Math.PI * 0.5);
+                        cur[gy * waveW + gx] += strength * falloff * falloff;
+                    }
+                }
+            }
+        }
+
+        // Organic swell — slow sine waves across the entire surface
+        // Multiple overlapping frequencies for natural look
+        var t = ambientFrame * 0.008;
+        var scale = CONFIG.ambientSwellScale;
+        for (var y = 2; y < waveH - 2; y += 3) {
+            for (var x = 2; x < waveW - 2; x += 3) {
+                var idx = y * waveW + x;
+                // Three overlapping sine waves at different angles and speeds
+                var s1 = Math.sin(x * 0.015 + t * 1.1) * Math.cos(y * 0.012 + t * 0.7);
+                var s2 = Math.sin(x * 0.008 - t * 0.6 + y * 0.01) * 0.7;
+                var s3 = Math.cos(x * 0.022 + y * 0.018 + t * 1.4) * 0.4;
+                var swell = (s1 + s2 + s3) * scale;
+                // Blend gently — don't overwrite, nudge toward swell value
+                cur[idx] += (swell - cur[idx]) * 0.003;
+            }
+        }
     }
 
     // --- Particles ---
@@ -484,10 +553,11 @@
             applyGravityWell();
         }
 
-        // Wave simulation — advance physics and apply to columns
+        // Wave simulation — advance physics, ambient movement, apply to columns
         for (var step = 0; step < CONFIG.waveStepsPerFrame; step++) {
             stepWave();
         }
+        ambientWaves();
         applyWaveToColumns();
 
         // Draw rain columns with displacement
@@ -753,6 +823,280 @@
     }
 
     typewrite();
+
+    // --- Surveillance Display ---
+    // Cycles viewer's own data in the subtitle — IP + geo from ipinfo.io (viewer's browser
+    // calls the API directly, so it returns THEIR public IP, not the server's)
+    // Browser fingerprint data from client-side APIs
+    var subEl = document.getElementById('subtitle');
+    var surveillanceLines = [];
+    var survIndex = 0;
+    var survReady = false;
+    var geoData = {};
+
+    function getClientFingerprint() {
+        var ua = navigator.userAgent;
+        var browser = 'UNKNOWN';
+        if (ua.indexOf('Firefox') > -1) browser = 'FIREFOX';
+        else if (ua.indexOf('Edg') > -1) browser = 'EDGE';
+        else if (ua.indexOf('Chrome') > -1) browser = 'CHROME';
+        else if (ua.indexOf('Safari') > -1) browser = 'SAFARI';
+
+        var os = 'UNKNOWN';
+        if (ua.indexOf('Windows') > -1) os = 'WINDOWS';
+        else if (ua.indexOf('Mac') > -1) os = 'MACOS';
+        else if (ua.indexOf('Linux') > -1) os = 'LINUX';
+        else if (ua.indexOf('Android') > -1) os = 'ANDROID';
+        else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) os = 'IOS';
+
+        var cores = navigator.hardwareConcurrency || '?';
+        var res = screen.width + 'x' + screen.height;
+        var depth = screen.colorDepth + '-BIT';
+        var conn = (navigator.connection && navigator.connection.effectiveType) ? navigator.connection.effectiveType.toUpperCase() : null;
+        var mem = navigator.deviceMemory ? navigator.deviceMemory + 'GB' : null;
+        var gpu = '';
+        try {
+            var gl = document.createElement('canvas').getContext('webgl');
+            if (gl) {
+                var ext = gl.getExtension('WEBGL_debug_renderer_info');
+                if (ext) gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+            }
+        } catch (e) {}
+        if (gpu.length > 38) gpu = gpu.substring(0, 38);
+
+        return { browser: browser, os: os, cores: cores, res: res, depth: depth, conn: conn, mem: mem, gpu: gpu };
+    }
+
+    function buildSurveillanceData() {
+        var fp = getClientFingerprint();
+        var now = new Date();
+        var ts = now.getFullYear() + '-' +
+            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+            String(now.getDate()).padStart(2, '0') + ' ' +
+            String(now.getHours()).padStart(2, '0') + ':' +
+            String(now.getMinutes()).padStart(2, '0') + ':' +
+            String(now.getSeconds()).padStart(2, '0');
+
+        var ip = geoData.ip || '?.?.?.?';
+        var city = geoData.city ? geoData.city.toUpperCase() : null;
+        var region = geoData.region ? geoData.region.toUpperCase() : null;
+        var country = geoData.country || null;
+        var loc = geoData.loc || null;
+        var org = geoData.org || null;
+        var tz = geoData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UNKNOWN';
+
+        surveillanceLines = [
+            'SUBJECT LOCATED // ' + ip,
+        ];
+        if (city && region && country) {
+            surveillanceLines.push('LOCATION: ' + city + ', ' + region + ' // ' + country);
+        }
+        if (loc) {
+            surveillanceLines.push('COORDINATES: ' + loc);
+        }
+        if (org) {
+            // Trim ASN prefix if present (e.g., "AS12345 Comcast")
+            var isp = org;
+            if (isp.indexOf(' ') > -1 && isp.substring(0, 2) === 'AS') {
+                isp = isp.substring(isp.indexOf(' ') + 1);
+            }
+            surveillanceLines.push('ISP: ' + isp.toUpperCase());
+        }
+        surveillanceLines.push('HOST: ' + fp.browser + ' // ' + fp.os);
+        surveillanceLines.push('DISPLAY: ' + fp.res + ' @ ' + fp.depth);
+        surveillanceLines.push('CPU THREADS: ' + fp.cores + (fp.mem ? ' // RAM: ' + fp.mem : ''));
+        if (fp.gpu) surveillanceLines.push('GPU: ' + fp.gpu.toUpperCase());
+        surveillanceLines.push('TIMESTAMP: ' + ts);
+        surveillanceLines.push('TIMEZONE: ' + tz);
+        if (fp.conn) surveillanceLines.push('NETWORK: ' + fp.conn);
+        surveillanceLines.push('THE SYSTEM SEES YOU');
+    }
+
+    // Fetch viewer's public IP + geo from ipinfo.io (viewer's browser makes this call,
+    // so the API sees the viewer's IP, not the server's — safe, no server-side leaks)
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://ipinfo.io/json', true);
+    xhr.timeout = 4000;
+    xhr.onload = function () {
+        try {
+            geoData = JSON.parse(xhr.responseText);
+        } catch (e) {}
+        buildSurveillanceData();
+        survReady = true;
+    };
+    xhr.onerror = xhr.ontimeout = function () {
+        buildSurveillanceData();
+        survReady = true;
+    };
+    xhr.send();
+
+    // Cycle surveillance lines with decode effect + glitch on unstable lines
+    var GLITCH_ERRORS = [
+        '// SYSTEM APPROXIMATING //',
+        '// CANNOT LOCK TRACK //',
+        '// SIGNAL DEGRADED //',
+        '// TRACE ROUTE FAILED //',
+        '// HANDSHAKE TIMEOUT //',
+        '// BUFFER OVERFLOW DETECTED //',
+        '// PACKET LOSS: RETRYING //',
+        '// FINGERPRINT MISMATCH //',
+        '// HARDWARE PROBE BLOCKED //',
+        '// ACCESS DENIED: RETRY //',
+        '// SCAN INCONCLUSIVE //',
+        '// DATA CORRUPTED: RESAMPLING //',
+        '// SUBSYSTEM UNRESPONSIVE //',
+        '// FREQUENCY DRIFT DETECTED //',
+        '// CALIBRATION ERROR //',
+        '// KERNEL FENCE ACTIVE //',
+        '// TELEMETRY INTERRUPTED //',
+        '// ENDPOINT UNREACHABLE //',
+        '// SYNC LOST: RECOVERING //',
+        '// CIPHER NEGOTIATION FAILED //'
+    ];
+
+    function isUnstableLine(text) {
+        return text.indexOf('CPU') > -1 || text.indexOf('RAM') > -1 ||
+               text.indexOf('GPU') > -1 || text.indexOf('NETWORK') > -1;
+    }
+
+    function glitchLine(text, intensity) {
+        var mChars = CONFIG.chars;
+        var out = '';
+        for (var i = 0; i < text.length; i++) {
+            if (Math.random() < intensity) {
+                out += mChars[Math.floor(Math.random() * mChars.length)];
+            } else {
+                out += text[i];
+            }
+        }
+        return out;
+    }
+
+    function playGlitchSequence(target, callback) {
+        var mChars = CONFIG.chars;
+        var steps = 12 + Math.floor(Math.random() * 8);
+        var step = 0;
+        var colors = ['#ff0041', '#00ff41', '#41ffff', '#ff00ff', '#ffff00', '#00ff41'];
+
+        function tick() {
+            if (step >= steps) {
+                // Show error message, then resolve to data
+                subEl.style.opacity = '0';
+                setTimeout(function () {
+                    var errMsg = GLITCH_ERRORS[Math.floor(Math.random() * GLITCH_ERRORS.length)];
+                    subEl.textContent = errMsg;
+                    subEl.style.color = '#ff0041';
+                    subEl.style.opacity = '1';
+                    subEl.style.transform = '';
+                    setTimeout(function () {
+                        subEl.style.opacity = '0';
+                        setTimeout(function () {
+                            subEl.textContent = target;
+                            subEl.style.color = '#ff6041';
+                            subEl.style.opacity = '1';
+                            setTimeout(function () {
+                                subEl.style.color = '';
+                                subEl.style.opacity = '';
+                                callback();
+                            }, 500);
+                        }, 80);
+                    }, 900);
+                }, 60);
+                return;
+            }
+
+            var progress = step / steps;
+
+            if (Math.random() < 0.25) {
+                // Blackout flicker
+                subEl.style.opacity = (0.05 + Math.random() * 0.15).toFixed(2);
+            } else {
+                subEl.style.opacity = (0.5 + Math.random() * 0.5).toFixed(2);
+            }
+
+            // Corrupt the text — more corruption early, resolves toward end
+            var corruption = Math.max(0.05, 0.8 - progress * 0.9);
+            var display = glitchLine(target, corruption);
+
+            // Random length jitter — line appears to cut off or overflow
+            if (Math.random() < 0.3) {
+                var cutLen = Math.floor(display.length * (0.4 + Math.random() * 0.6));
+                display = display.substring(0, cutLen);
+            }
+            if (Math.random() < 0.15) {
+                // Insert garbage block
+                var garbage = '';
+                for (var g = 0; g < 3 + Math.floor(Math.random() * 5); g++) {
+                    garbage += mChars[Math.floor(Math.random() * mChars.length)];
+                }
+                var insertAt = Math.floor(Math.random() * display.length);
+                display = display.substring(0, insertAt) + garbage + display.substring(insertAt);
+            }
+
+            subEl.textContent = display;
+            subEl.style.color = colors[Math.floor(Math.random() * colors.length)];
+
+            // Horizontal offset jitter
+            var jitterX = (Math.random() - 0.5) * 6;
+            subEl.style.transform = 'translateX(' + jitterX.toFixed(1) + 'px)';
+
+            step++;
+            setTimeout(tick, 30 + Math.random() * 60);
+        }
+
+        // Kick off with a brief "signal lost" moment
+        subEl.textContent = '// SIGNAL UNSTABLE //';
+        subEl.style.color = '#ff0041';
+        setTimeout(tick, 200 + Math.random() * 150);
+    }
+
+    function cycleSurveillance() {
+        if (!survReady || document.body.classList.contains('booting')) {
+            setTimeout(cycleSurveillance, 500);
+            return;
+        }
+
+        var target = surveillanceLines[survIndex];
+        var unstable = isUnstableLine(target);
+        var mChars = CONFIG.chars;
+
+        if (unstable) {
+            // Glitch sequence for unstable lines
+            playGlitchSequence(target, function () {
+                subEl.style.transform = '';
+                survIndex = (survIndex + 1) % surveillanceLines.length;
+                if (survIndex === 0) buildSurveillanceData();
+                setTimeout(cycleSurveillance, 2500);
+            });
+        } else {
+            // Normal decode for stable lines
+            var pos = 0;
+            function decodeStep() {
+                if (pos <= target.length) {
+                    var decoded = target.substring(0, pos);
+                    var remaining = target.length - pos;
+                    var scramble = '';
+                    for (var i = 0; i < Math.min(remaining, 6); i++) {
+                        scramble += mChars[Math.floor(Math.random() * mChars.length)];
+                    }
+                    subEl.textContent = decoded + scramble;
+                    subEl.style.color = pos < target.length ? '#00ff41' : '';
+                    pos++;
+                    setTimeout(decodeStep, 25 + Math.random() * 15);
+                } else {
+                    subEl.textContent = target;
+                    subEl.style.color = '';
+                    survIndex = (survIndex + 1) % surveillanceLines.length;
+                    if (survIndex === 0) buildSurveillanceData();
+                    setTimeout(cycleSurveillance, 2500);
+                }
+            }
+            decodeStep();
+        }
+    }
+
+    // Start surveillance after boot completes
+    setTimeout(cycleSurveillance, 3000);
 
     // --- CRT Boot Sequence ---
     var bootScreen = document.getElementById('boot-screen');
