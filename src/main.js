@@ -905,7 +905,8 @@
                 var x = v.vx * e;
                 var y = v.vy * e + 250 * e * e;
                 var r = v.vr * e;
-                var o = Math.max(0, 1 - e * 0.85);
+                // Fade out fully — reaches 0 at ~75% through animation
+                var o = Math.max(0, 1 - e * 1.35);
                 chars[i].el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate(' + r.toFixed(1) + 'deg)';
                 chars[i].el.style.opacity = o.toFixed(2);
                 if (t < 0.3) {

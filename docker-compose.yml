@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: matrix-hello
     ports:
-      - "192.168.1.76:3001:8080"
+      - "0.0.0.0:3001:8080"
     restart: unless-stopped
     read_only: true
     tmpfs:
