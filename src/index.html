@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WAKE UP // XION</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=20260304l">
 </head>
-<body>
+<body class="booting">
+    <!-- CRT Boot Sequence Overlay -->
+    <div id="boot-screen"><div id="boot-line"></div></div>
+
     <div id="scene">
         <!-- Deep background: matrix rain — barely moves -->
         <div class="parallax-layer" data-depth="0.10">
@@ -26,7 +29,6 @@
                 </div>
                 <div id="subtitle">THE SYSTEM SEES YOU</div>
                 <div id="typewriter"></div>
-                <div id="cursor">_</div>
             </div>
         </div>
 
@@ -41,8 +43,22 @@
         </div>
     </div>
 
+    <!-- CRT TV Frame Overlay -->
+    <div id="crt-frame">
+        <div id="crt-bezel-shine"></div>
+        <div id="crt-power-led"></div>
+    </div>
+    <div id="scanline-sweep"></div>
+
+    <!-- Interaction hints -->
+    <div id="hints">
+        <span>click: ripple</span>
+        <span>double-click: burst</span>
+        <span>hold: freeze</span>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/parallax/3.1.0/parallax.min.js"></script>
-    <script src="main.js"></script>
+    <script src="main.js?v=20260304l"></script>
 </body>
 </html>

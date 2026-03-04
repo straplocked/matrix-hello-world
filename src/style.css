@@ -1,3 +1,8 @@
+:root {
+    --bezel: clamp(18px, 3vw, 45px);
+    --bezel-radius: 18px;
+}
+
 *, *::before, *::after {
     margin: 0;
     padding: 0;
@@ -9,13 +14,67 @@ body {
     background: #000000;
     font-family: 'Courier New', 'Lucida Console', monospace;
     color: #00ff41;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     cursor: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+html {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+/* --- CRT Boot Sequence --- */
+#boot-screen {
+    position: fixed;
+    top: var(--bezel);
+    left: var(--bezel);
+    width: calc(100vw - var(--bezel) * 2);
+    height: calc(100vh - var(--bezel) * 2);
+    z-index: 999;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#boot-line {
+    width: 0;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+    box-shadow:
+        0 0 8px #fff,
+        0 0 20px #00ff41,
+        0 0 40px rgba(0, 255, 65, 0.4);
+}
+
+/* Hide hints, LED, and sweep during boot */
+body.booting #hints {
+    animation: none;
+    opacity: 0;
+}
+
+body.booting #crt-power-led {
+    animation: none;
+    opacity: 0;
+}
+
+body.booting #scanline-sweep {
+    animation: none;
+    opacity: 0;
 }
 
 /* --- Parallax Scene --- */
 #scene {
+    position: relative;
     width: 104vw;
     height: 104vh;
     margin-left: -2vw;
@@ -26,8 +85,11 @@ body {
 }
 
 .parallax-layer {
-    /* parallax.js sets position: absolute, width, height automatically */
-    /* Inner content needs to fill the layer */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 }
 
 /* --- Matrix Background Layer --- */
@@ -55,10 +117,10 @@ body {
     pointer-events: none;
     background: repeating-linear-gradient(
         0deg,
-        rgba(0, 0, 0, 0.15) 0px,
-        rgba(0, 0, 0, 0.15) 1px,
+        rgba(0, 0, 0, 0.25) 0px,
+        rgba(0, 0, 0, 0.25) 1px,
         transparent 1px,
-        transparent 3px
+        transparent 2px
     );
 }
 
@@ -71,8 +133,8 @@ body {
     height: 100%;
     background: radial-gradient(
         ellipse at center,
-        transparent 50%,
-        rgba(0, 0, 0, 0.5) 100%
+        transparent 40%,
+        rgba(0, 0, 0, 0.65) 100%
     );
 }
 
@@ -99,13 +161,6 @@ body {
     text-align: center;
     pointer-events: none;
     padding: 2rem 3rem;
-    background: radial-gradient(
-        ellipse at center,
-        rgba(0, 0, 0, 0.7) 0%,
-        rgba(0, 0, 0, 0.5) 40%,
-        rgba(0, 0, 0, 0.2) 70%,
-        transparent 100%
-    );
 }
 
 #hello-text {
@@ -169,9 +224,7 @@ body {
         0 0 10px #008f11;
 }
 
-#cursor {
-    font-size: clamp(1rem, 3vw, 2rem);
-    margin-top: 0.5rem;
+.tw-cursor {
     animation: blink 1s step-end infinite;
 }
 
@@ -218,4 +271,187 @@ body {
     50% { opacity: 0.3; }
     52% { opacity: 0.8; }
     54% { opacity: 0.3; }
+}
+
+/* --- CRT TV Frame --- */
+#crt-frame {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
+    border: var(--bezel) solid #0a0a0a;
+    border-radius: var(--bezel-radius);
+    box-shadow:
+        /* Inner bevel — screen recessed into bezel */
+        inset 0 0 0 3px #050505,
+        inset 0 0 0 5px #1a1a1a,
+        inset 0 0 60px rgba(0, 0, 0, 0.9),
+        inset 0 0 120px rgba(0, 0, 0, 0.6),
+        /* Screen edge glow — phosphor bleed */
+        inset 0 0 200px rgba(0, 255, 65, 0.015),
+        /* Outer bezel depth */
+        0 0 0 2px #222,
+        0 0 0 4px #111,
+        0 2px 15px rgba(0, 0, 0, 0.9);
+}
+
+/* Bezel highlight — subtle shine on top edge */
+#crt-bezel-shine {
+    position: absolute;
+    top: -2px;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(255, 255, 255, 0.06),
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.06),
+        transparent
+    );
+    border-radius: 50%;
+}
+
+/* Power LED indicator */
+#crt-power-led {
+    position: absolute;
+    bottom: clamp(-14px, -1.2vw, -10px);
+    right: clamp(30px, 5vw, 60px);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00ff41;
+    box-shadow:
+        0 0 4px #00ff41,
+        0 0 8px #00ff41,
+        0 0 16px rgba(0, 255, 65, 0.4);
+    animation: ledPulse 3s ease-in-out infinite;
+}
+
+@keyframes ledPulse {
+    0%, 100% { opacity: 0.8; box-shadow: 0 0 4px #00ff41, 0 0 8px #00ff41, 0 0 16px rgba(0, 255, 65, 0.4); }
+    50% { opacity: 1; box-shadow: 0 0 6px #00ff41, 0 0 12px #00ff41, 0 0 24px rgba(0, 255, 65, 0.6); }
+}
+
+/* --- Scanline Sweep Bar --- */
+#scanline-sweep {
+    position: fixed;
+    top: -10%;
+    left: 0;
+    width: 100%;
+    height: 120px;
+    pointer-events: none;
+    z-index: 999;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(0, 255, 65, 0.015) 20%,
+        rgba(0, 255, 65, 0.04) 40%,
+        rgba(255, 255, 255, 0.02) 50%,
+        rgba(0, 255, 65, 0.04) 60%,
+        rgba(0, 255, 65, 0.015) 80%,
+        transparent 100%
+    );
+    animation: scanSweep 6s linear infinite;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes scanSweep {
+    0% { top: -15%; }
+    100% { top: 110%; }
+}
+
+/* --- CRT Screen Curvature --- */
+#scene {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* --- CRT Flicker (very subtle) --- */
+body {
+    animation: crtFlicker 0.1s infinite;
+}
+
+@keyframes crtFlicker {
+    0% { opacity: 1; }
+    50% { opacity: 0.995; }
+    100% { opacity: 1; }
+}
+
+/* --- RGB Sub-pixel Texture (CRT phosphor dots) --- */
+#crt-frame::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            rgba(255, 0, 0, 0.02) 0px,
+            rgba(0, 255, 0, 0.02) 1px,
+            rgba(0, 100, 255, 0.02) 2px,
+            transparent 3px
+        );
+    z-index: 1001;
+    mix-blend-mode: screen;
+}
+
+/* --- Interaction Hints --- */
+#hints {
+    position: fixed;
+    bottom: clamp(28px, 4vw, 55px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1001;
+    pointer-events: none;
+    display: flex;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    font-family: 'Courier New', 'Lucida Console', monospace;
+    font-size: clamp(0.55rem, 1.2vw, 0.75rem);
+    letter-spacing: 0.12em;
+    color: #00ff41;
+    opacity: 0;
+    animation: hintsIn 1s 3.5s ease forwards;
+    transition: opacity 0.8s ease;
+}
+
+#hints span {
+    opacity: 0.4;
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
+    white-space: nowrap;
+}
+
+#hints span::before {
+    content: '// ';
+    opacity: 0.3;
+}
+
+@keyframes hintsIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* --- Screen edge curvature shadow (simulates curved glass) --- */
+#crt-frame::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 20px;
+    pointer-events: none;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 55%,
+        rgba(0, 0, 0, 0.4) 75%,
+        rgba(0, 0, 0, 0.8) 100%
+    );
 }

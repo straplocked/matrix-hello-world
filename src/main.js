@@ -7,16 +7,16 @@
                'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*',
         fontSize: 16,
         bgAlpha: 0.05,
-        speed: 0.3,
+        speed: 0.15,
         density: 0.96,
         gravityRadius: 14,
         trailLength: 30,
-        waveCellSize: 6,
+        waveCellSize: 2,
         waveSpeed: 0.45,
         waveDamping: 0.985,
-        waveDropRadius: 5,
-        waveDropStrength: 20,
-        waveStepsPerFrame: 1,
+        waveDropRadius: 24,
+        waveDropStrength: 30,
+        waveStepsPerFrame: 2,
         particleCount: 60,
         particleLife: 80,
         holdThreshold: 180,
@@ -73,7 +73,7 @@
         columns = Math.floor(rainCanvas.width / CONFIG.fontSize);
         drops = [];
         for (var i = 0; i < columns; i++) {
-            var spd = 0.5 + Math.random() * CONFIG.speed;
+            var spd = 0.25 + Math.random() * CONFIG.speed;
             drops.push({
                 y: Math.random() * -100,
                 speed: spd,
@@ -105,23 +105,54 @@
         waveIdx = 0;
     }
 
-    // Drop a "stone" into the wave field — creates a cosine-bell perturbation
+    // Drop a "stone" into the wave field — organic, randomized perturbation
     function dropStone(px, py) {
         var cur = waveBuf[waveIdx];
         var cx = Math.floor(px / CONFIG.waveCellSize);
         var cy = Math.floor(py / CONFIG.waveCellSize);
-        var radius = CONFIG.waveDropRadius;
-        var strength = CONFIG.waveDropStrength;
+        var radius = CONFIG.waveDropRadius * (0.7 + Math.random() * 0.6);
+        var strength = CONFIG.waveDropStrength * (0.6 + Math.random() * 0.8);
+
+        // Randomized ellipse for organic shape
+        var stretchX = 0.8 + Math.random() * 0.4;
+        var stretchY = 0.8 + Math.random() * 0.4;
+        var angle = Math.random() * Math.PI;
+        var cosA = Math.cos(angle);
+        var sinA = Math.sin(angle);
 
         for (var dy = -radius; dy <= radius; dy++) {
             for (var dx = -radius; dx <= radius; dx++) {
                 var gx = cx + dx;
                 var gy = cy + dy;
                 if (gx < 1 || gx >= waveW - 1 || gy < 1 || gy >= waveH - 1) continue;
-                var dist = Math.sqrt(dx * dx + dy * dy);
+                // Rotate and stretch for elliptical drop
+                var rx = (dx * cosA - dy * sinA) * stretchX;
+                var ry = (dx * sinA + dy * cosA) * stretchY;
+                var dist = Math.sqrt(rx * rx + ry * ry);
                 if (dist <= radius) {
                     var falloff = Math.cos(dist / radius * Math.PI * 0.5);
-                    cur[gy * waveW + gx] -= strength * falloff * falloff;
+                    var noise = 0.85 + Math.random() * 0.3;
+                    cur[gy * waveW + gx] -= strength * falloff * falloff * noise;
+                }
+            }
+        }
+
+        // Secondary smaller ripples nearby for natural splash feel
+        for (var s = 0; s < 3; s++) {
+            var ox = cx + Math.round((Math.random() - 0.5) * radius * 1.5);
+            var oy = cy + Math.round((Math.random() - 0.5) * radius * 1.5);
+            var sr = Math.floor(radius * (0.2 + Math.random() * 0.3));
+            var ss = strength * (0.15 + Math.random() * 0.25);
+            for (var dy2 = -sr; dy2 <= sr; dy2++) {
+                for (var dx2 = -sr; dx2 <= sr; dx2++) {
+                    var sx = ox + dx2;
+                    var sy = oy + dy2;
+                    if (sx < 1 || sx >= waveW - 1 || sy < 1 || sy >= waveH - 1) continue;
+                    var sd = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                    if (sd <= sr) {
+                        var sf = Math.cos(sd / sr * Math.PI * 0.5);
+                        cur[sy * waveW + sx] -= ss * sf * sf;
+                    }
                 }
             }
         }
@@ -691,6 +722,9 @@
 
     // --- Typewriter ---
     var typewriterEl = document.getElementById('typewriter');
+    var twCursor = document.createElement('span');
+    twCursor.className = 'tw-cursor';
+    twCursor.textContent = '_';
     var msgIndex = 0;
     var charIndex = 0;
     var isDeleting = false;
@@ -705,7 +739,8 @@
             charIndex++;
             speed = 70 + Math.random() * 50;
         }
-        typewriterEl.textContent = fullText.substring(0, charIndex) + '_';
+        typewriterEl.textContent = fullText.substring(0, charIndex);
+        typewriterEl.appendChild(twCursor);
         if (!isDeleting && charIndex === fullText.length) {
             speed = 2200;
             isDeleting = true;
@@ -718,5 +753,258 @@
     }
 
     typewrite();
+
+    // --- CRT Boot Sequence ---
+    var bootScreen = document.getElementById('boot-screen');
+    var bootLine = document.getElementById('boot-line');
+    var powerLed = document.getElementById('crt-power-led');
+
+    // Phase 1 (200ms): Power LED snaps on
+    setTimeout(function () {
+        powerLed.style.opacity = '1';
+        powerLed.style.boxShadow = '0 0 4px #00ff41, 0 0 8px #00ff41';
+    }, 200);
+
+    // Phase 2 (400ms): Thin horizontal line appears — beam warmup
+    setTimeout(function () {
+        bootLine.style.transition = 'width 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        bootLine.style.width = '60%';
+    }, 400);
+
+    // Phase 2b (600ms): Line flickers — brief dropout
+    setTimeout(function () {
+        bootLine.style.transition = 'opacity 0.05s';
+        bootLine.style.opacity = '0.3';
+    }, 600);
+    setTimeout(function () {
+        bootLine.style.opacity = '1';
+    }, 650);
+    setTimeout(function () {
+        bootLine.style.opacity = '0.5';
+    }, 680);
+    setTimeout(function () {
+        bootLine.style.opacity = '1';
+    }, 710);
+
+    // Phase 3 (750ms): Line extends to full width
+    setTimeout(function () {
+        bootLine.style.transition = 'width 0.3s cubic-bezier(0.22, 0.61, 0.36, 1)';
+        bootLine.style.width = '95%';
+    }, 750);
+
+    // Phase 4 (1050ms): Vertical deflection kicks in — line expands into rectangle
+    setTimeout(function () {
+        bootLine.style.transition = 'width 0.2s ease, height 0.6s cubic-bezier(0.22, 0.61, 0.36, 1), background 0.4s ease, box-shadow 0.4s ease';
+        bootLine.style.width = '100%';
+        bootLine.style.height = '100%';
+        bootLine.style.borderRadius = '0';
+        bootLine.style.background = 'rgba(0, 255, 65, 0.08)';
+        bootLine.style.boxShadow = '0 0 60px rgba(0, 255, 65, 0.15), inset 0 0 100px rgba(0, 255, 65, 0.05)';
+    }, 1050);
+
+    // Phase 5 (1500ms): Phosphor brightness overshoot flash
+    setTimeout(function () {
+        bootScreen.style.transition = 'background 0.12s ease';
+        bootScreen.style.background = 'rgba(0, 255, 65, 0.2)';
+    }, 1500);
+
+    // Phase 5b (1620ms): Flash decays
+    setTimeout(function () {
+        bootScreen.style.transition = 'background 0.15s ease';
+        bootScreen.style.background = 'rgba(0, 255, 65, 0.08)';
+    }, 1620);
+
+    // Phase 6 (1800ms): Overlay fades out to reveal scene
+    setTimeout(function () {
+        bootScreen.style.transition = 'opacity 0.4s ease-out';
+        bootScreen.style.opacity = '0';
+    }, 1800);
+
+    // Phase 7 (2300ms): Cleanup — remove overlay, restore LED animation, enable hints
+    setTimeout(function () {
+        bootScreen.parentNode.removeChild(bootScreen);
+        document.body.classList.remove('booting');
+        powerLed.style.boxShadow = '';
+        powerLed.style.animation = '';
+    }, 2300);
+
+    // --- Text Shatter Effect ---
+    var shatterState = { active: false, cooldown: false, chars: [], wasInText: false };
+
+    (function initShatter() {
+        var helloText = document.getElementById('hello-text');
+        var els = helloText.querySelectorAll('.main-line, .bracket');
+        for (var e = 0; e < els.length; e++) {
+            var el = els[e];
+            var text = el.textContent.trim();
+            if (!text) continue;
+            var frag = document.createDocumentFragment();
+            for (var i = 0; i < text.length; i++) {
+                var span = document.createElement('span');
+                span.textContent = text[i];
+                span.style.display = 'inline-block';
+                frag.appendChild(span);
+                shatterState.chars.push({ el: span, orig: text[i] });
+            }
+            el.textContent = '';
+            el.appendChild(frag);
+        }
+    })();
+
+    function triggerShatter(mx, my) {
+        if (shatterState.active || shatterState.cooldown) return;
+        if (document.body.classList.contains('booting')) return;
+        shatterState.active = true;
+
+        screenFlash('rgba(255, 255, 255, 0.25)', 80);
+        addBurst(mx, my);
+        dropStone(mx, my);
+
+        // Glitch the subtitle and typewriter on impact
+        var subEl = document.getElementById('subtitle');
+        subEl.style.transition = 'opacity 0.05s';
+        subEl.style.opacity = '0.1';
+        setTimeout(function () {
+            subEl.style.opacity = '';
+            setTimeout(function () {
+                subEl.style.opacity = '0.15';
+                setTimeout(function () {
+                    subEl.style.transition = 'opacity 0.5s ease';
+                    subEl.style.opacity = '';
+                }, 80);
+            }, 100);
+        }, 100);
+        typewriterEl.style.transition = 'opacity 0.05s';
+        typewriterEl.style.opacity = '0';
+        setTimeout(function () { typewriterEl.style.opacity = ''; typewriterEl.style.transition = ''; }, 200);
+
+        var chars = shatterState.chars;
+        var vels = [];
+
+        for (var i = 0; i < chars.length; i++) {
+            var rect = chars[i].el.getBoundingClientRect();
+            var cx = rect.left + rect.width / 2;
+            var cy = rect.top + rect.height / 2;
+            var dx = cx - mx, dy = cy - my;
+            var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            var force = 100 + Math.random() * 250;
+            vels.push({
+                vx: (dx / dist) * force * (0.5 + Math.random()),
+                vy: (dy / dist) * force * (0.5 + Math.random()) - 80,
+                vr: (Math.random() - 0.5) * 720
+            });
+        }
+
+        var t0 = performance.now();
+        function animateScatter(now) {
+            var t = Math.min(1, (now - t0) / 700);
+            var e = 1 - Math.pow(1 - t, 3);
+
+            for (var i = 0; i < chars.length; i++) {
+                var v = vels[i];
+                var x = v.vx * e;
+                var y = v.vy * e + 250 * e * e;
+                var r = v.vr * e;
+                var o = Math.max(0, 1 - e * 0.85);
+                chars[i].el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate(' + r.toFixed(1) + 'deg)';
+                chars[i].el.style.opacity = o.toFixed(2);
+                if (t < 0.3) {
+                    var glow = Math.round(15 * (1 - t / 0.3));
+                    chars[i].el.style.textShadow = '0 0 ' + glow + 'px #00ff41, 0 0 ' + (glow * 2) + 'px rgba(0,255,65,0.5)';
+                } else {
+                    chars[i].el.style.textShadow = 'none';
+                }
+            }
+
+            if (t < 1) requestAnimationFrame(animateScatter);
+            else setTimeout(reassembleText, 700);
+        }
+
+        requestAnimationFrame(animateScatter);
+    }
+
+    function reassembleText() {
+        var chars = shatterState.chars;
+        var mChars = CONFIG.chars;
+        var order = [];
+        for (var i = 0; i < chars.length; i++) order.push(i);
+        for (var i = order.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+        }
+
+        for (var n = 0; n < order.length; n++) {
+            (function (idx, delay) {
+                var c = chars[idx];
+                var cyc = setInterval(function () {
+                    c.el.textContent = mChars[Math.floor(Math.random() * mChars.length)];
+                    c.el.style.color = '#00ff41';
+                    c.el.style.textShadow = '0 0 8px #00ff41';
+                }, 50);
+
+                setTimeout(function () {
+                    clearInterval(cyc);
+                    c.el.textContent = c.orig;
+                    c.el.style.color = '';
+                    c.el.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease';
+                    c.el.style.transform = 'translate(0,0) rotate(0deg) scale(1)';
+                    c.el.style.opacity = '1';
+
+                    setTimeout(function () {
+                        c.el.style.textShadow = '0 0 20px #00ff41, 0 0 40px #00ff41, 0 0 60px rgba(255,255,255,0.4)';
+                        setTimeout(function () {
+                            c.el.style.transition = 'text-shadow 0.8s ease-out';
+                            c.el.style.textShadow = '';
+                        }, 120);
+                    }, 500);
+                }, delay);
+            })(order[n], n * 130 + Math.random() * 50);
+        }
+
+        setTimeout(function () {
+            for (var i = 0; i < chars.length; i++) {
+                chars[i].el.style.transition = '';
+                chars[i].el.style.transform = '';
+                chars[i].el.style.opacity = '';
+                chars[i].el.style.color = '';
+                chars[i].el.style.textShadow = '';
+            }
+            shatterState.active = false;
+            shatterState.cooldown = true;
+            setTimeout(function () { shatterState.cooldown = false; }, 3000);
+        }, order.length * 180 + 1800);
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        if (shatterState.active || shatterState.cooldown) return;
+        if (document.body.classList.contains('booting')) return;
+        var rect = document.getElementById('hello-text').getBoundingClientRect();
+        var pad = 15;
+        var inText = e.clientX >= rect.left - pad && e.clientX <= rect.right + pad &&
+                     e.clientY >= rect.top - pad && e.clientY <= rect.bottom + pad;
+        if (inText && !shatterState.wasInText) triggerShatter(e.clientX, e.clientY);
+        shatterState.wasInText = inText;
+    });
+
+    // --- LED Random Flicker ---
+    function flickerLed() {
+        if (document.body.classList.contains('booting')) {
+            setTimeout(flickerLed, 2000 + Math.random() * 3000);
+            return;
+        }
+        var count = 1 + Math.floor(Math.random() * 3);
+        var i = 0;
+        function flick() {
+            powerLed.style.opacity = (0.1 + Math.random() * 0.2).toFixed(2);
+            setTimeout(function () {
+                powerLed.style.opacity = '';
+                i++;
+                if (i < count) setTimeout(flick, 40 + Math.random() * 70);
+            }, 30 + Math.random() * 50);
+        }
+        flick();
+        setTimeout(flickerLed, 4000 + Math.random() * 8000);
+    }
+    setTimeout(flickerLed, 5000 + Math.random() * 5000);
 
 })();
