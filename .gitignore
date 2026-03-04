@@ -1,0 +1,27 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Docker
+**/docker-compose.override.yml
+
+# Logs
+*.log
+
+# Environment files with secrets
+**/.env
+!**/.env.example
+
+# Node (inside containers, but just in case)
+**/node_modules/
+
+# Claude Code
+.claude/
+.claude.json

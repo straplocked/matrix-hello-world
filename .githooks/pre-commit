@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+echo "=== Pre-commit CI check ==="
+
+# Validate all docker-compose files
+for compose_file in */docker-compose.yml; do
+    if [ -f "$compose_file" ]; then
+        echo "Validating $compose_file..."
+        docker compose -f "$compose_file" config -q || {
+            echo "FAIL: $compose_file is invalid"
+            exit 1
+        }
+    fi
+done
+
+# Check port conflicts in ports.conf
+if [ -f ports.conf ]; then
+    DUPES=$(grep -v '^#' ports.conf | grep -v '^\s*$' | awk '{print $1}' | sort | uniq -d)
+    if [ -n "$DUPES" ]; then
+        echo "FAIL: Duplicate ports detected: $DUPES"
+        exit 1
+    fi
+fi
+
+echo "=== Pre-commit checks passed ==="

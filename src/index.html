@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WAKE UP // XION</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="scene">
+        <!-- Deep background: matrix rain — barely moves -->
+        <div class="parallax-layer" data-depth="0.10">
+            <div id="matrix-bg"></div>
+        </div>
+
+        <!-- Mid layer: overlay text — noticeable parallax -->
+        <div class="parallax-layer" data-depth="0.60">
+            <div id="overlay">
+                <div id="hello-text">
+                    <span class="bracket">[</span>
+                    <div id="text-inner">
+                        <div class="main-line">WAKE</div>
+                        <div class="main-line">UP</div>
+                    </div>
+                    <span class="bracket">]</span>
+                </div>
+                <div id="subtitle">THE SYSTEM SEES YOU</div>
+                <div id="typewriter"></div>
+                <div id="cursor">_</div>
+            </div>
+        </div>
+
+        <!-- Screen flash — doesn't move -->
+        <div class="parallax-layer" data-depth="0.0">
+            <div id="screen-flash"></div>
+        </div>
+
+        <!-- Scanlines — very subtle movement -->
+        <div class="parallax-layer" data-depth="0.03">
+            <div id="scanlines"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/parallax/3.1.0/parallax.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

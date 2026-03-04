@@ -1,0 +1,221 @@
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    overflow: hidden;
+    background: #000000;
+    font-family: 'Courier New', 'Lucida Console', monospace;
+    color: #00ff41;
+    width: 100vw;
+    height: 100vh;
+    cursor: none;
+}
+
+/* --- Parallax Scene --- */
+#scene {
+    width: 104vw;
+    height: 104vh;
+    margin-left: -2vw;
+    margin-top: -2vh;
+    overflow: hidden;
+    will-change: transform;
+    transform-origin: center center;
+}
+
+.parallax-layer {
+    /* parallax.js sets position: absolute, width, height automatically */
+    /* Inner content needs to fill the layer */
+}
+
+/* --- Matrix Background Layer --- */
+#matrix-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#matrix-bg canvas {
+    display: block;
+}
+
+/* --- Scanlines Layer --- */
+#scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.15) 0px,
+        rgba(0, 0, 0, 0.15) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+}
+
+#scanlines::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 50%,
+        rgba(0, 0, 0, 0.5) 100%
+    );
+}
+
+/* --- Screen Flash Layer --- */
+#screen-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s ease-out;
+}
+
+/* --- Overlay Text Layer --- */
+#overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    text-align: center;
+    pointer-events: none;
+    padding: 2rem 3rem;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.5) 40%,
+        rgba(0, 0, 0, 0.2) 70%,
+        transparent 100%
+    );
+}
+
+#hello-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+#text-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+
+.bracket {
+    color: #00cc33;
+    opacity: 0.5;
+    font-size: clamp(6rem, 18vw, 14rem);
+    font-weight: 100;
+    line-height: 1;
+    text-shadow:
+        0 0 10px #00ff41,
+        0 0 30px #008f11;
+    animation: bracketGlow 3s ease-in-out infinite alternate;
+}
+
+.main-line {
+    font-size: clamp(3rem, 10vw, 8rem);
+    font-weight: bold;
+    color: #00ff41;
+    text-shadow:
+        0 0 10px #00ff41,
+        0 0 20px #00ff41,
+        0 0 40px #00ff41,
+        0 0 80px #008f11;
+    letter-spacing: 0.3em;
+    line-height: 1.1;
+    animation: textGlow 2s ease-in-out infinite alternate;
+}
+
+#subtitle {
+    font-size: clamp(0.7rem, 2.5vw, 1.2rem);
+    color: #00cc33;
+    margin-top: 1.2rem;
+    letter-spacing: 0.5em;
+    opacity: 0.6;
+    animation: subtitleFlicker 4s ease-in-out infinite;
+}
+
+#typewriter {
+    font-size: clamp(0.6rem, 1.8vw, 1rem);
+    color: #00ff41;
+    margin-top: 1.5rem;
+    letter-spacing: 0.15em;
+    opacity: 0.8;
+    min-height: 1.5em;
+    text-shadow:
+        0 0 5px #00ff41,
+        0 0 10px #008f11;
+}
+
+#cursor {
+    font-size: clamp(1rem, 3vw, 2rem);
+    margin-top: 0.5rem;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes textGlow {
+    from {
+        text-shadow:
+            0 0 10px #00ff41,
+            0 0 20px #00ff41,
+            0 0 40px #00ff41,
+            0 0 80px #008f11;
+    }
+    to {
+        text-shadow:
+            0 0 15px #00ff41,
+            0 0 30px #00ff41,
+            0 0 60px #00ff41,
+            0 0 120px #008f11,
+            0 0 160px #008f11;
+    }
+}
+
+@keyframes bracketGlow {
+    from {
+        text-shadow:
+            0 0 10px #00ff41,
+            0 0 30px #008f11;
+        opacity: 0.4;
+    }
+    to {
+        text-shadow:
+            0 0 15px #00ff41,
+            0 0 40px #008f11,
+            0 0 60px #008f11;
+        opacity: 0.6;
+    }
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+@keyframes subtitleFlicker {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+    52% { opacity: 0.8; }
+    54% { opacity: 0.3; }
+}

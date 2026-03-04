@@ -1,0 +1,11 @@
+#!/bin/bash
+echo "=== Post-merge: rebuilding changed apps ==="
+
+CHANGED_APPS=$(git diff HEAD@{1} --name-only | cut -d/ -f1 | sort -u)
+for app in $CHANGED_APPS; do
+    if [ -f "$app/docker-compose.yml" ]; then
+        echo "Rebuilding $app..."
+        docker compose -f "$app/docker-compose.yml" build
+        docker compose -f "$app/docker-compose.yml" up -d
+    fi
+done
