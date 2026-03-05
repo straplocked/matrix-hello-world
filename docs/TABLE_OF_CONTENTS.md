@@ -23,8 +23,8 @@
 ```
 matrix-hello/
 ├── src/
-│   ├── index.html          (64 lines)   Entry point HTML, CRT frame, parallax layers
-│   ├── main.js            (1011 lines)  Core application: rain, waves, shatter, boot
+│   ├── index.html          (66 lines)   Entry point HTML, CRT frame, parallax layers
+│   ├── main.js           (3193 lines)  Core application: rain, waves, shatter, boot, easter egg, HUD
 │   └── style.css           (457 lines)  CRT effects, animations, responsive layout
 ├── docs/
 │   ├── TABLE_OF_CONTENTS.md             This file
@@ -56,4 +56,5 @@ matrix-hello/
 - **Physics**: 2D wave equation with triple-buffered ping-pong, Phong-shaded surface rendering
 - **CRT Effects**: Scanlines, phosphor dots, vignette, boot animation, LED flicker, screen curvature — all CSS
 - **Parallax**: 4-layer depth system via Parallax.js + CSS perspective tilt
+- **Easter Egg**: Red dot → geo-trace scanner with Mapbox satellite tiles, 8-phase search timeline, HUD overlay, error notifications, reboot
 - **Security**: Non-root container, read-only filesystem, all capabilities dropped, CSP headers

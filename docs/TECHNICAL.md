@@ -86,7 +86,60 @@ Boot screen is contained inside the CRT bezel using CSS variables (`--bezel`).
 - Each flick: opacity drops to 10-30% for 30-80ms
 - Skipped during boot sequence
 
-#### 8. Typewriter (`typewrite()`)
+#### 8. Red Dot Easter Egg (Multi-phase sequence)
+
+Hidden interactive easter egg triggered by clicking a pulsing red dot.
+
+**Phase 1 — Red Dot Appearance** (`showRedDot()`)
+- Appears ~20s after boot completes
+- Positioned randomly along screen edge with pulse animation
+- Click triggers the full geo-trace sequence
+
+**Phase 2 — Screen Break** (`eggPhaseBreakApart()`)
+- Text shatters, screen cracks apart
+- Pre-generates all geographic waypoints and stores on `eggSequence`
+- Initializes Mapbox GL map (or fallback if unavailable)
+- Duration: 1,200ms
+
+**Phase 3 — Geo-Trace Scanner** (`eggPhaseMapHud()`)
+- Real satellite map via Mapbox GL JS v3.11.0
+- Frame-by-frame `map.jumpTo()` driven by `getSearchGeo(t)`
+- 8-phase search timeline (normalized t = 0.0–1.0):
+
+| Phase | Range | State | Zoom | Behavior |
+|-------|-------|-------|------|----------|
+| 1 | 0.00–0.18 | SCANNING | 4→8 | Start → wrong position 1 |
+| 2 | 0.18–0.25 | ACQUIRING | 8→9 | Hover wrong1 with wobble |
+| 3 | 0.25–0.37 | SIGNAL LOST | 9→7 | Jerk away, zoom pullback |
+| 4 | 0.37–0.47 | REACQUIRING | 7→11 | Jerk1 → wrong position 2 |
+| 5 | 0.47–0.54 | ACQUIRING | 11→12 | Hover wrong2 with wobble |
+| 6 | 0.54–0.66 | SIGNAL LOST | 12→10 | Jerk away, zoom pullback |
+| 7 | 0.66–0.76 | CONVERGING | 10→16 | Jerk2 → real coordinates |
+| 8 | 0.76–1.00 | LOCKED | 16→18 | Hold real, final zoom |
+
+- Wrong positions offset ±0.3°/0.4° (nearly another town)
+- Pre-generated `jerkBearing1`/`jerkBearing2` for stable camera rotation
+- `drawSignalLostOverlay()`: red flash, static noise, 64px warning bar, typewriter errors
+- HUD: targeting reticle (centered ±2px jitter, ±6px during SIGNAL LOST), status bar, callout panel, crosshair sweep, grid overlay
+- Duration: 11,000ms
+
+**Phase 4 — Ground Break** (`eggPhaseGroundBreak()`)
+- Captures final map frame as static image
+- Shatter effect on satellite view
+- Duration: 800ms
+
+**Phase 5 — Glitch & Reboot**
+- Full-screen glitch corruption overlay
+- CRT shutdown animation
+- Complete system reboot (boot sequence replays)
+
+**Fallback Path** (`eggPhaseMapZoomFallback()`)
+- Procedural map using seeded random (`srand()`)
+- Matching 8-phase timeline via `getFbSearchOffset(t)` / `getFbSearchState(t)`
+- Identical HUD and error overlays via shared `drawSignalLostOverlay()`
+- Viewer's real geo data displayed in surveillance callout
+
+#### 9. Typewriter (`typewrite()`)
 - Cycles through 6 Matrix-themed messages
 - Type speed: 70-120ms per char, delete speed: 30ms
 - Blinking cursor via `.tw-cursor` span with CSS `step-end` animation
@@ -133,7 +186,7 @@ Additional CSS perspective tilt (`perspective(1500px) rotateY/rotateX`) derived 
 | X-Content-Type-Options | nosniff |
 | X-XSS-Protection | 1; mode=block |
 | Referrer-Policy | strict-origin-when-cross-origin |
-| Content-Security-Policy | default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' cdnjs; object-src 'none'; frame-ancestors 'self' |
+| Content-Security-Policy | default-src 'self'; script-src 'self' 'unsafe-inline' cdnjs; style-src 'self' 'unsafe-inline' api.mapbox.com; img-src 'self' data: blob:; connect-src 'self' cdnjs ipinfo.io api.mapbox.com *.tiles.mapbox.com events.mapbox.com; worker-src blob:; object-src 'none'; frame-ancestors 'self' |
 
 ### Caching
 - CSS/JS: 1-hour expiry with `Cache-Control: public, immutable`
@@ -181,5 +234,12 @@ Convention: `YYYYMMDD` + incrementing letter suffix (a, b, c...).
 |---------|---------|---------|
 | Three.js | r128 | WebGL rendering, canvas texture compositing |
 | Parallax.js | 3.1.0 | Mouse/gyroscope-driven parallax layers |
+| Mapbox GL JS | 3.11.0 | Satellite map tiles for geo-trace easter egg |
 
 No npm, no build step, no local dependencies.
+
+## External APIs
+| Service | Usage | Privacy |
+|---------|-------|---------|
+| ipinfo.io | Client-side geo-IP lookup (lat/lng, city, ISP) | Viewer's browser makes the request directly |
+| Mapbox | Satellite map tiles during easter egg sequence | API key required, tiles loaded on-demand |

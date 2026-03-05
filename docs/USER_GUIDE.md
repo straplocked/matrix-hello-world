@@ -25,6 +25,7 @@ This takes about 2 seconds and plays automatically.
 | **Double-click** | Double left-click | Burst of 60 matrix characters exploding from click point |
 | **Hold** | Press and hold (~180ms) | Freezes all rain in place with glitch effects. Release to unfreeze |
 | **Cross text** | Move mouse over [WAKE UP] | Text shatters like a bullet impact, then reassembles with Matrix decode effect |
+| **Red dot** | Click the pulsing red dot (appears after ~20s) | Triggers full geo-trace surveillance sequence (see Easter Egg section) |
 
 ### Mobile/Tablet
 
@@ -60,6 +61,19 @@ Below the main text, a terminal-style typewriter cycles through messages:
 - `> free your mind`
 - `> knock knock, neo`
 - `> the matrix has you`
+
+## Hidden Easter Egg
+
+After the page has been running for about 20 seconds, a small pulsing red dot may appear along the edge of the screen. Clicking it triggers a cinematic surveillance sequence:
+
+1. **Screen break** — the display shatters apart
+2. **Geo-trace scanner** — a satellite map appears with a targeting reticle scanning for your location
+3. **False lock-ons** — the scanner locks onto wrong positions, loses signal (with warning notifications), then reacquires
+4. **Final lock** — the scanner converges on your actual location with street-level satellite imagery
+5. **Ground break** — the satellite view shatters
+6. **System reboot** — the CRT powers off and reboots from scratch
+
+The scanner uses your real approximate location via public IP geolocation. If Mapbox satellite tiles are unavailable, a procedural fallback map is generated instead.
 
 ## Browser Requirements
 

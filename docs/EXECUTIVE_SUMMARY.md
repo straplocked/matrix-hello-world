@@ -10,6 +10,7 @@ Matrix Hello is an interactive web-based visualization that recreates the iconic
 - Responds to user interaction: mouse clicks create physics-based ripple effects, hovering bends the rain, and crossing the main text triggers a cinematic shatter-and-reassemble animation
 - Simulates a CRT television with realistic boot sequence, scanlines, phosphor dot pattern, and screen curvature
 - Creates depth through parallax layers and perspective tilt tracking
+- Hidden easter egg: clicking a pulsing red dot triggers a geo-trace surveillance sequence with real satellite map tiles (Mapbox GL JS) that scans for and locks onto the viewer's location
 
 ## Technology Stack
 
@@ -18,6 +19,7 @@ Matrix Hello is an interactive web-based visualization that recreates the iconic
 | Language | Vanilla JavaScript (ES5) | Zero build tools, maximum compatibility, no framework overhead |
 | 3D Rendering | Three.js (CDN) | GPU-accelerated canvas compositing via WebGL |
 | Parallax | Parallax.js (CDN) | Proven library for mouse/gyroscope depth effects |
+| Mapping | Mapbox GL JS (CDN) | Satellite map tiles for geo-trace easter egg |
 | Server | nginx 1.27 Alpine | Minimal footprint (~7MB image), high performance |
 | Container | Docker Compose | Reproducible deployment, infrastructure-as-code |
 | CI/CD | Shell scripts + git hooks | Pre-commit validation, auto-rebuild on merge |
@@ -43,10 +45,10 @@ Matrix Hello is an interactive web-based visualization that recreates the iconic
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `main.js` | 1,011 | All application logic |
+| `main.js` | 3,193 | All application logic (rain, waves, shatter, easter egg, HUD) |
 | `style.css` | 457 | All visual styling and CRT effects |
-| `index.html` | 64 | Page structure |
-| **Total** | **1,532** | Complete application |
+| `index.html` | 66 | Page structure |
+| **Total** | **3,716** | Complete application |
 
 Plus ~100 lines of infrastructure (Dockerfile, compose, nginx conf, Makefile, scripts).
 
@@ -55,5 +57,5 @@ Plus ~100 lines of infrastructure (Dockerfile, compose, nginx conf, Makefile, sc
 - Container runs as non-root with zero Linux capabilities
 - Read-only filesystem prevents runtime modification
 - Content Security Policy restricts script/style sources
-- No data collection, no cookies, no external API calls
-- No user authentication required
+- Client-side only API calls (ipinfo.io geo-IP, Mapbox tiles) — no server-side data collection
+- No cookies, no user authentication required

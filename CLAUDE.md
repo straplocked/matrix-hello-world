@@ -9,9 +9,9 @@ Interactive Matrix-themed web visualization with CRT TV aesthetic. Vanilla JS + 
 - **Cache busting**: Update `?v=` query strings in `index.html` when changing CSS/JS
 
 ## Key Files
-- `src/main.js` (1011 lines) — All application logic: rain, waves, particles, shatter, boot, LED
+- `src/main.js` (3193 lines) — All application logic: rain, waves, particles, shatter, boot, LED, easter egg, HUD, geo-trace
 - `src/style.css` (457 lines) — CRT effects, animations, responsive layout
-- `src/index.html` (64 lines) — Page structure, parallax layers, CRT frame
+- `src/index.html` (66 lines) — Page structure, parallax layers, CRT frame
 
 ## Documentation
 - Read `DOC_UPDATE.md` first for documentation strategy
@@ -34,6 +34,6 @@ Container: non-root nginx, read-only filesystem, all caps dropped, 256MB/1CPU li
 
 ## Conventions
 - Cache buster format: `?v=YYYYMMDD[letter]` (increment letter for same-day changes)
-- No npm, no build step — CDN dependencies only (Three.js r128, Parallax.js 3.1.0)
+- No npm, no build step — CDN dependencies only (Three.js r128, Parallax.js 3.1.0, Mapbox GL JS 3.11.0)
 - ES5 style JavaScript (var, function expressions, no arrow functions)
 - All animation code lives in the single IIFE in main.js
