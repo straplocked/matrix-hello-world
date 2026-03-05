@@ -43,12 +43,10 @@ test: ## Run tests for all apps
 		$(MAKE) test-$$app; \
 	done
 
-test-matrix-hello: ## Test matrix-hello is serving correctly
+test-matrix-hello: ## Run smoke tests for matrix-hello
 	@docker compose -f matrix-hello/docker-compose.yml up -d
 	@sleep 2
-	@curl -sf http://localhost:3001 > /dev/null && \
-		echo "  PASS: matrix-hello responds on :3001" || \
-		echo "  FAIL: matrix-hello not responding on :3001"
+	@bash matrix-hello/tests/smoke.sh 3001
 
 lint: ## Lint Dockerfiles and compose files
 	@for app in $(APPS); do \

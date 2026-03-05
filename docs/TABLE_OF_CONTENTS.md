@@ -32,6 +32,9 @@ matrix-hello/
 │   ├── USER_GUIDE.md                    End user guide
 │   ├── EXECUTIVE_SUMMARY.md             Leadership overview
 │   └── CHANGELOG.md                     Change log
+├── tests/
+│   ├── test.html                        Browser-based unit test suite (open in browser)
+│   └── smoke.sh                         Shell-based smoke tests for container
 ├── scripts/
 │   ├── ci.sh                            Local CI pipeline
 │   └── new-app.sh                       App scaffold generator

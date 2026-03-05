@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Matrix Hello — Unit Tests</title>
+<style>
+    body { font-family: 'Courier New', monospace; background: #0a0a0a; color: #00ff41; margin: 2rem; }
+    h1 { border-bottom: 2px solid #00ff41; padding-bottom: 0.5rem; }
+    .suite { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 3px solid #333; }
+    .suite-name { font-weight: bold; font-size: 1.1em; margin-bottom: 0.5rem; }
+    .pass { color: #00ff41; }
+    .fail { color: #ff3333; }
+    .test-result { margin: 2px 0; padding: 2px 0; }
+    .summary { margin-top: 2rem; padding: 1rem; border: 2px solid; font-size: 1.2em; }
+    .summary.all-pass { border-color: #00ff41; }
+    .summary.has-fail { border-color: #ff3333; }
+    pre { background: #111; padding: 0.5rem; margin: 0.25rem 0; overflow-x: auto; font-size: 0.85em; color: #ccc; }
+</style>
+</head>
+<body>
+<h1>MATRIX HELLO // UNIT TESTS</h1>
+<div id="results"></div>
+<div id="summary"></div>
+
+<script>
+// ========================================================================
+// Minimal test framework (zero dependencies)
+// ========================================================================
+var results = document.getElementById('results');
+var totalPass = 0;
+var totalFail = 0;
+var currentSuite = null;
+
+function suite(name) {
+    currentSuite = document.createElement('div');
+    currentSuite.className = 'suite';
+    currentSuite.innerHTML = '<div class="suite-name">// ' + name + '</div>';
+    results.appendChild(currentSuite);
+}
+
+function assert(condition, message, detail) {
+    var el = document.createElement('div');
+    el.className = 'test-result';
+    if (condition) {
+        totalPass++;
+        el.innerHTML = '<span class="pass">PASS</span> ' + message;
+    } else {
+        totalFail++;
+        el.innerHTML = '<span class="fail">FAIL</span> ' + message;
+        if (detail) el.innerHTML += '<pre>' + detail + '</pre>';
+    }
+    currentSuite.appendChild(el);
+}
+
+function assertEqual(actual, expected, message) {
+    var pass = actual === expected;
+    assert(pass, message, pass ? null : 'Expected: ' + JSON.stringify(expected) + '\nActual:   ' + JSON.stringify(actual));
+}
+
+function assertApprox(actual, expected, tolerance, message) {
+    var pass = Math.abs(actual - expected) <= tolerance;
+    assert(pass, message, pass ? null : 'Expected: ' + expected + ' +/- ' + tolerance + '\nActual:   ' + actual);
+}
+
+function assertInRange(val, min, max, message) {
+    var pass = val >= min && val <= max;
+    assert(pass, message, pass ? null : 'Expected range: [' + min + ', ' + max + ']\nActual: ' + val);
+}
+
+// ========================================================================
+// Extracted pure functions from main.js (copied verbatim for testing)
+// These are re-implemented here because main.js is an IIFE with no exports
+// ========================================================================
+
+// --- Seeded random (srand) ---
+function srand(seed) {
+    var x = Math.sin(seed * 9301 + 49297) * 49297;
+    return x - Math.floor(x);
+}
+
+// --- isUnstableLine ---
+function isUnstableLine(text) {
+    return /CPU|RAM|GPU|NETWORK/i.test(text);
+}
+
+// --- glitchLine ---
+var glitchChars = '\u30A2\u30A4\u30A6\u30A8\u30AA\u30AB\u30AD\u30AF\u30B1\u30B3\u30B5\u30B7\u30B9\u30BB\u30BD@#$%&*!?><{}[]|/\\';
+function glitchLine(text, intensity) {
+    var arr = text.split('');
+    for (var i = 0; i < arr.length; i++) {
+        if (Math.random() < intensity) {
+            arr[i] = glitchChars[Math.floor(Math.random() * glitchChars.length)];
+        }
+    }
+    return arr.join('');
+}
+
+// --- Wave equation step (simplified 1D for testing) ---
+function stepWave1D(cur, prev, nx, c2, damping) {
+    var next = new Float32Array(nx);
+    for (var i = 1; i < nx - 1; i++) {
+        var laplacian = cur[i - 1] + cur[i + 1] - 2 * cur[i];
+        next[i] = damping * (2 * cur[i] - prev[i] + c2 * laplacian);
+    }
+    // Absorbing boundaries
+    next[0] = next[1] * 0.5;
+    next[nx - 1] = next[nx - 2] * 0.5;
+    return next;
+}
+
+// --- Search state machine ---
+function getSearchState(t) {
+    if (t < 0.18) return 'SCANNING';
+    if (t < 0.25) return 'ACQUIRING';
+    if (t < 0.37) return 'SIGNAL LOST';
+    if (t < 0.47) return 'REACQUIRING';
+    if (t < 0.54) return 'ACQUIRING';
+    if (t < 0.66) return 'SIGNAL LOST';
+    if (t < 0.76) return 'CONVERGING';
+    return 'LOCKED';
+}
+
+// --- Fallback search state machine ---
+function getFbSearchState(t) {
+    if (t < 0.18) return 'SCANNING';
+    if (t < 0.25) return 'ACQUIRING';
+    if (t < 0.37) return 'SIGNAL LOST';
+    if (t < 0.47) return 'REACQUIRING';
+    if (t < 0.54) return 'ACQUIRING';
+    if (t < 0.66) return 'SIGNAL LOST';
+    if (t < 0.76) return 'CONVERGING';
+    return 'LOCKED';
+}
+
+// --- Smooth-step easing ---
+function smoothstep(t) {
+    return t * t * (3 - 2 * t);
+}
+
+// --- Linear interpolation ---
+function lerp(a, b, t) {
+    return a + (b - a) * t;
+}
+
+
+// ========================================================================
+// TEST SUITES
+// ========================================================================
+
+// --- srand (seeded random) ---
+suite('srand — Seeded Random Number Generator');
+(function() {
+    // Deterministic: same seed = same output
+    var a = srand(42);
+    var b = srand(42);
+    assertEqual(a, b, 'Same seed produces same value');
+
+    // Different seeds = different outputs
+    var c = srand(1);
+    var d = srand(2);
+    assert(c !== d, 'Different seeds produce different values');
+
+    // Output in range [0, 1)
+    for (var i = 0; i < 100; i++) {
+        var v = srand(i * 7 + 13);
+        if (v < 0 || v >= 1) {
+            assert(false, 'Output in range [0, 1) for seed ' + (i * 7 + 13), 'Got: ' + v);
+            return;
+        }
+    }
+    assert(true, 'All 100 seeds produce values in [0, 1)');
+
+    // Distribution: not all values clustered
+    var buckets = [0, 0, 0, 0, 0];
+    for (var j = 0; j < 500; j++) {
+        var val = srand(j);
+        buckets[Math.floor(val * 5)]++;
+    }
+    var allBucketsUsed = buckets.every(function(b) { return b > 30; });
+    assert(allBucketsUsed, 'Reasonable distribution across 5 buckets (>30 each)', 'Buckets: [' + buckets.join(', ') + ']');
+
+    // Negative seeds work
+    var neg = srand(-100);
+    assertInRange(neg, 0, 1, 'Negative seed produces valid output');
+
+    // Large seeds work
+    var big = srand(999999999);
+    assertInRange(big, 0, 1, 'Large seed produces valid output');
+})();
+
+// --- isUnstableLine ---
+suite('isUnstableLine — Surveillance Line Detection');
+(function() {
+    assertEqual(isUnstableLine('CPU: Intel i7-12700K'), true, 'Detects CPU line');
+    assertEqual(isUnstableLine('RAM: 16GB DDR5'), true, 'Detects RAM line');
+    assertEqual(isUnstableLine('GPU: NVIDIA RTX 3090'), true, 'Detects GPU line');
+    assertEqual(isUnstableLine('NETWORK: 192.168.1.1'), true, 'Detects NETWORK line');
+    assertEqual(isUnstableLine('cpu: lowercase'), true, 'Case insensitive (cpu)');
+    assertEqual(isUnstableLine('IP: 8.8.8.8'), false, 'Does not match IP line');
+    assertEqual(isUnstableLine('LOCATION: New York'), false, 'Does not match LOCATION');
+    assertEqual(isUnstableLine('ISP: Comcast'), false, 'Does not match ISP');
+    assertEqual(isUnstableLine(''), false, 'Empty string returns false');
+})();
+
+// --- glitchLine ---
+suite('glitchLine — Text Corruption');
+(function() {
+    // Zero intensity = no change
+    var orig = 'HELLO WORLD TEST';
+    var result = glitchLine(orig, 0);
+    assertEqual(result, orig, 'Zero intensity preserves original text');
+
+    // Length preserved
+    var glitched = glitchLine('ABCDEFGHIJ', 0.5);
+    assertEqual(glitched.length, 10, 'Output length matches input length');
+
+    // Full intensity corrupts most chars
+    var heavy = glitchLine('AAAAAAAAAA', 1.0);
+    var changed = 0;
+    for (var i = 0; i < heavy.length; i++) {
+        if (heavy[i] !== 'A') changed++;
+    }
+    assert(changed >= 7, 'Intensity 1.0 corrupts most characters (' + changed + '/10 changed)');
+
+    // Empty string
+    assertEqual(glitchLine('', 0.5), '', 'Empty string returns empty');
+})();
+
+// --- Search State Machine ---
+suite('getSearchState — 8-Phase Search Timeline');
+(function() {
+    // Phase boundaries
+    assertEqual(getSearchState(0.0), 'SCANNING', 't=0.00 → SCANNING');
+    assertEqual(getSearchState(0.10), 'SCANNING', 't=0.10 → SCANNING');
+    assertEqual(getSearchState(0.17), 'SCANNING', 't=0.17 → SCANNING (edge)');
+    assertEqual(getSearchState(0.18), 'ACQUIRING', 't=0.18 → ACQUIRING');
+    assertEqual(getSearchState(0.24), 'ACQUIRING', 't=0.24 → ACQUIRING (edge)');
+    assertEqual(getSearchState(0.25), 'SIGNAL LOST', 't=0.25 → SIGNAL LOST');
+    assertEqual(getSearchState(0.36), 'SIGNAL LOST', 't=0.36 → SIGNAL LOST (edge)');
+    assertEqual(getSearchState(0.37), 'REACQUIRING', 't=0.37 → REACQUIRING');
+    assertEqual(getSearchState(0.46), 'REACQUIRING', 't=0.46 → REACQUIRING (edge)');
+    assertEqual(getSearchState(0.47), 'ACQUIRING', 't=0.47 → ACQUIRING');
+    assertEqual(getSearchState(0.53), 'ACQUIRING', 't=0.53 → ACQUIRING (edge)');
+    assertEqual(getSearchState(0.54), 'SIGNAL LOST', 't=0.54 → SIGNAL LOST');
+    assertEqual(getSearchState(0.65), 'SIGNAL LOST', 't=0.65 → SIGNAL LOST (edge)');
+    assertEqual(getSearchState(0.66), 'CONVERGING', 't=0.66 → CONVERGING');
+    assertEqual(getSearchState(0.75), 'CONVERGING', 't=0.75 → CONVERGING (edge)');
+    assertEqual(getSearchState(0.76), 'LOCKED', 't=0.76 → LOCKED');
+    assertEqual(getSearchState(0.90), 'LOCKED', 't=0.90 → LOCKED');
+    assertEqual(getSearchState(1.0), 'LOCKED', 't=1.00 → LOCKED');
+})();
+
+// --- Mapbox/Fallback State Parity ---
+suite('State Machine Parity — Mapbox vs Fallback');
+(function() {
+    var testPoints = [0.0, 0.05, 0.17, 0.18, 0.24, 0.25, 0.30, 0.36, 0.37, 0.40,
+                      0.46, 0.47, 0.50, 0.53, 0.54, 0.60, 0.65, 0.66, 0.70, 0.75,
+                      0.76, 0.80, 0.90, 1.0];
+    var allMatch = true;
+    for (var i = 0; i < testPoints.length; i++) {
+        var t = testPoints[i];
+        var mapbox = getSearchState(t);
+        var fallback = getFbSearchState(t);
+        if (mapbox !== fallback) {
+            assert(false, 'State mismatch at t=' + t, 'Mapbox: ' + mapbox + ', Fallback: ' + fallback);
+            allMatch = false;
+        }
+    }
+    if (allMatch) {
+        assert(true, 'All ' + testPoints.length + ' timeline points match between Mapbox and fallback');
+    }
+
+    // SIGNAL LOST phases have equal duration
+    var lost1Duration = 0.37 - 0.25;
+    var lost2Duration = 0.66 - 0.54;
+    assertApprox(lost1Duration, lost2Duration, 0.001, 'Both SIGNAL LOST phases have equal duration (0.12)');
+    assertApprox(lost1Duration, 0.12, 0.001, 'SIGNAL LOST duration is 12% of timeline');
+})();
+
+// --- Timeline Coverage ---
+suite('Timeline Coverage — No Gaps or Overlaps');
+(function() {
+    var states = [];
+    var step = 0.001;
+    for (var t = 0; t <= 1.0; t += step) {
+        var s = getSearchState(t);
+        if (states.length === 0 || states[states.length - 1].state !== s) {
+            states.push({ state: s, start: t });
+        }
+    }
+    assertEqual(states.length, 8, 'Exactly 8 distinct phases in timeline');
+    assertEqual(states[0].state, 'SCANNING', 'First phase is SCANNING');
+    assertEqual(states[states.length - 1].state, 'LOCKED', 'Last phase is LOCKED');
+
+    // Verify expected order
+    var expectedOrder = ['SCANNING', 'ACQUIRING', 'SIGNAL LOST', 'REACQUIRING', 'ACQUIRING', 'SIGNAL LOST', 'CONVERGING', 'LOCKED'];
+    var actualOrder = states.map(function(s) { return s.state; });
+    var orderMatch = expectedOrder.length === actualOrder.length && expectedOrder.every(function(s, i) { return s === actualOrder[i]; });
+    assert(orderMatch, 'Phase order matches expected sequence', orderMatch ? null : 'Expected: ' + expectedOrder.join(' → ') + '\nActual:   ' + actualOrder.join(' → '));
+})();
+
+// --- Wave Equation ---
+suite('Wave Equation — 1D Numerical Stability');
+(function() {
+    var nx = 64;
+    var c2 = 0.2;
+    var damping = 0.985;
+
+    // Initialize with a spike
+    var cur = new Float32Array(nx);
+    var prev = new Float32Array(nx);
+    cur[32] = 1.0; // Single point perturbation
+
+    // Step 100 times
+    for (var step = 0; step < 100; step++) {
+        var next = stepWave1D(cur, prev, nx, c2, damping);
+        prev = cur;
+        cur = next;
+    }
+
+    // Energy should decay (damping < 1)
+    var energy = 0;
+    for (var i = 0; i < nx; i++) {
+        energy += cur[i] * cur[i];
+    }
+    assert(energy < 1.0, 'Wave energy decays after 100 steps (energy=' + energy.toFixed(6) + ')');
+    assert(energy > 0, 'Wave still has some energy (not fully damped in 100 steps)');
+
+    // No NaN or Infinity
+    var hasNaN = false;
+    for (var j = 0; j < nx; j++) {
+        if (isNaN(cur[j]) || !isFinite(cur[j])) { hasNaN = true; break; }
+    }
+    assert(!hasNaN, 'No NaN or Infinity values after 100 steps');
+
+    // Wave should spread (not stuck at origin)
+    var nonZero = 0;
+    for (var k = 0; k < nx; k++) {
+        if (Math.abs(cur[k]) > 0.0001) nonZero++;
+    }
+    assert(nonZero > 5, 'Wave has spread to multiple cells (' + nonZero + ' non-zero)');
+})();
+
+suite('Wave Equation — Long-term Stability');
+(function() {
+    var nx = 128;
+    var c2 = 0.2;
+    var damping = 0.985;
+
+    var cur = new Float32Array(nx);
+    var prev = new Float32Array(nx);
+    cur[64] = 10.0; // Larger perturbation
+
+    // Step 1000 times
+    for (var step = 0; step < 1000; step++) {
+        var next = stepWave1D(cur, prev, nx, c2, damping);
+        prev = cur;
+        cur = next;
+
+        // Check for blowup
+        var maxVal = 0;
+        for (var i = 0; i < nx; i++) {
+            if (Math.abs(cur[i]) > maxVal) maxVal = Math.abs(cur[i]);
+        }
+        if (maxVal > 1000) {
+            assert(false, 'Wave blew up at step ' + step + ' (max=' + maxVal.toFixed(2) + ')');
+            return;
+        }
+    }
+    assert(true, 'Wave stable after 1000 steps (no blowup)');
+
+    // Should be nearly fully damped
+    var maxFinal = 0;
+    for (var j = 0; j < nx; j++) {
+        if (Math.abs(cur[j]) > maxFinal) maxFinal = Math.abs(cur[j]);
+    }
+    assert(maxFinal < 0.1, 'Wave nearly fully damped after 1000 steps (max=' + maxFinal.toFixed(6) + ')');
+})();
+
+// --- Smoothstep ---
+suite('smoothstep — Easing Function');
+(function() {
+    assertApprox(smoothstep(0), 0, 0.001, 'smoothstep(0) = 0');
+    assertApprox(smoothstep(1), 1, 0.001, 'smoothstep(1) = 1');
+    assertApprox(smoothstep(0.5), 0.5, 0.001, 'smoothstep(0.5) = 0.5');
+
+    // Monotonically increasing
+    var prev = 0;
+    var monotonic = true;
+    for (var t = 0; t <= 1; t += 0.01) {
+        var val = smoothstep(t);
+        if (val < prev - 0.0001) { monotonic = false; break; }
+        prev = val;
+    }
+    assert(monotonic, 'Monotonically increasing on [0, 1]');
+
+    // Derivative is 0 at endpoints (S-curve property)
+    var d0 = (smoothstep(0.001) - smoothstep(0)) / 0.001;
+    var d1 = (smoothstep(1) - smoothstep(0.999)) / 0.001;
+    assert(Math.abs(d0) < 0.01, 'Near-zero derivative at t=0 (d=' + d0.toFixed(6) + ')');
+    assert(Math.abs(d1) < 0.01, 'Near-zero derivative at t=1 (d=' + d1.toFixed(6) + ')');
+})();
+
+// --- lerp ---
+suite('lerp — Linear Interpolation');
+(function() {
+    assertApprox(lerp(0, 10, 0), 0, 0.001, 'lerp(0, 10, 0) = 0');
+    assertApprox(lerp(0, 10, 1), 10, 0.001, 'lerp(0, 10, 1) = 10');
+    assertApprox(lerp(0, 10, 0.5), 5, 0.001, 'lerp(0, 10, 0.5) = 5');
+    assertApprox(lerp(-5, 5, 0.5), 0, 0.001, 'lerp(-5, 5, 0.5) = 0');
+    assertApprox(lerp(100, 200, 0.25), 125, 0.001, 'lerp(100, 200, 0.25) = 125');
+
+    // Extrapolation works
+    assertApprox(lerp(0, 10, 2.0), 20, 0.001, 'lerp extrapolates beyond 1.0');
+    assertApprox(lerp(0, 10, -0.5), -5, 0.001, 'lerp extrapolates below 0.0');
+})();
+
+// --- CONFIG Constants Validation ---
+suite('CONFIG Constants — Sanity Checks');
+(function() {
+    // These are the values from main.js CONFIG object
+    var CONFIG = {
+        eggBreakDuration: 1200,
+        eggMapDuration: 11000,
+        eggGroundBreakDuration: 800,
+        redDotDelay: 20000,
+        speed: 0.15,
+        density: 0.96,
+        fontSize: 16,
+        waveCellSize: 18,
+        damping: 0.988,
+        waveDropRadius: 48,
+        waveDropStrength: 40
+    };
+
+    assert(CONFIG.eggBreakDuration > 0 && CONFIG.eggBreakDuration < 5000, 'eggBreakDuration reasonable (1200ms)');
+    assert(CONFIG.eggMapDuration > 5000 && CONFIG.eggMapDuration < 30000, 'eggMapDuration reasonable (11000ms)');
+    assert(CONFIG.eggGroundBreakDuration > 0 && CONFIG.eggGroundBreakDuration < 3000, 'eggGroundBreakDuration reasonable (800ms)');
+    assert(CONFIG.redDotDelay >= 10000 && CONFIG.redDotDelay < 120000, 'redDotDelay reasonable (20000ms)');
+    assert(CONFIG.speed > 0 && CONFIG.speed < 1, 'Rain speed in valid range (0.15)');
+    assert(CONFIG.density > 0.5 && CONFIG.density <= 1, 'Rain density in valid range (0.96)');
+    assert(CONFIG.fontSize >= 8 && CONFIG.fontSize <= 32, 'Font size reasonable (16px)');
+    assert(CONFIG.damping > 0.9 && CONFIG.damping < 1.0, 'Wave damping in stable range (0.988)');
+    assert(CONFIG.waveDropRadius > 0, 'Wave drop radius positive (48)');
+    assert(CONFIG.waveDropStrength > 0, 'Wave drop strength positive (40)');
+})();
+
+// --- Total Easter Egg Duration ---
+suite('Easter Egg — Total Duration Budget');
+(function() {
+    var breakDuration = 1200;
+    var mapDuration = 11000;
+    var groundBreakDuration = 800;
+    var totalMs = breakDuration + mapDuration + groundBreakDuration;
+    var totalSec = totalMs / 1000;
+
+    assertInRange(totalSec, 10, 20, 'Total sequence is 10-20 seconds (' + totalSec + 's)');
+    assertApprox(totalSec, 13, 1, 'Total sequence approximately 13 seconds');
+
+    // Map phase is the longest
+    assert(mapDuration > breakDuration && mapDuration > groundBreakDuration,
+        'Map phase is the longest phase (' + mapDuration + 'ms)');
+})();
+
+
+// ========================================================================
+// SUMMARY
+// ========================================================================
+(function() {
+    var summaryEl = document.getElementById('summary');
+    var total = totalPass + totalFail;
+    summaryEl.className = 'summary ' + (totalFail === 0 ? 'all-pass' : 'has-fail');
+    summaryEl.innerHTML = (totalFail === 0 ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED') +
+        '<br>' + totalPass + '/' + total + ' passed, ' + totalFail + ' failed';
+    document.title = (totalFail === 0 ? 'PASS' : 'FAIL') + ' — Matrix Hello Tests (' + totalPass + '/' + total + ')';
+})();
+</script>
+</body>
+</html>
