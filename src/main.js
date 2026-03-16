@@ -1297,6 +1297,12 @@
         bootScreen.style.background = 'rgba(0, 255, 65, 0.08)';
     }, 1620);
 
+    // Phase 5c (1650ms): Source URL flashes in — terminal init style
+    var bootSource = document.getElementById('boot-source');
+    setTimeout(function () {
+        if (bootSource) bootSource.classList.add('visible');
+    }, 1650);
+
     // Phase 6 (1800ms): Overlay fades out to reveal scene
     setTimeout(function () {
         bootScreen.style.transition = 'opacity 0.4s ease-out';
@@ -3105,7 +3111,11 @@
         newBootScreen.id = 'boot-screen';
         var newBootLine = document.createElement('div');
         newBootLine.id = 'boot-line';
+        var newBootSource = document.createElement('div');
+        newBootSource.id = 'boot-source';
+        newBootSource.innerHTML = '<a href="https://github.com/straplocked/matrix-hello-world" target="_blank" rel="noopener">github.com/straplocked/matrix-hello-world</a>';
         newBootScreen.appendChild(newBootLine);
+        newBootScreen.appendChild(newBootSource);
         document.body.insertBefore(newBootScreen, document.body.firstChild);
         document.body.classList.add('booting');
 
@@ -3151,6 +3161,10 @@
             newBootScreen.style.transition = 'background 0.15s ease';
             newBootScreen.style.background = 'rgba(0, 255, 65, 0.08)';
         }, 1620);
+
+        setTimeout(function () {
+            if (newBootSource) newBootSource.classList.add('visible');
+        }, 1650);
 
         setTimeout(function () {
             newBootScreen.style.transition = 'opacity 0.4s ease-out';

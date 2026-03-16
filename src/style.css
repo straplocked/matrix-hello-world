@@ -45,6 +45,39 @@ html {
     overflow: hidden;
 }
 
+#boot-source {
+    position: absolute;
+    bottom: 12%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: rgba(0, 255, 65, 0);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+    text-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
+}
+
+#boot-source.visible {
+    opacity: 1;
+    color: rgba(0, 255, 65, 0.6);
+    pointer-events: auto;
+}
+
+#boot-source a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#boot-source a:hover {
+    color: rgba(0, 255, 65, 0.9);
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+}
+
 #boot-line {
     width: 0;
     height: 2px;
