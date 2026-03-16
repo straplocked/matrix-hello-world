@@ -1285,38 +1285,38 @@
         bootLine.style.boxShadow = '0 0 60px rgba(0, 255, 65, 0.15), inset 0 0 100px rgba(0, 255, 65, 0.05)';
     }, 1050);
 
-    // Phase 5 (1500ms): Phosphor brightness overshoot flash
+    // Phase 5 (1200ms): Source URL fades in — terminal init style
+    var bootSource = document.getElementById('boot-source');
+    setTimeout(function () {
+        if (bootSource) bootSource.classList.add('visible');
+    }, 1200);
+
+    // Phase 5b (1500ms): Phosphor brightness overshoot flash
     setTimeout(function () {
         bootScreen.style.transition = 'background 0.12s ease';
         bootScreen.style.background = 'rgba(0, 255, 65, 0.2)';
     }, 1500);
 
-    // Phase 5b (1620ms): Flash decays
+    // Phase 5c (1620ms): Flash decays
     setTimeout(function () {
         bootScreen.style.transition = 'background 0.15s ease';
         bootScreen.style.background = 'rgba(0, 255, 65, 0.08)';
     }, 1620);
 
-    // Phase 5c (1650ms): Source URL flashes in — terminal init style
-    var bootSource = document.getElementById('boot-source');
+    // Phase 6 (3200ms): Overlay fades out to reveal scene
     setTimeout(function () {
-        if (bootSource) bootSource.classList.add('visible');
-    }, 1650);
-
-    // Phase 6 (1800ms): Overlay fades out to reveal scene
-    setTimeout(function () {
-        bootScreen.style.transition = 'opacity 0.4s ease-out';
+        bootScreen.style.transition = 'opacity 0.6s ease-out';
         bootScreen.style.opacity = '0';
-    }, 1800);
+    }, 3200);
 
-    // Phase 7 (2300ms): Cleanup — remove overlay, restore LED animation, enable hints
+    // Phase 7 (3900ms): Cleanup — remove overlay, restore LED animation, enable hints
     setTimeout(function () {
         bootScreen.parentNode.removeChild(bootScreen);
         document.body.classList.remove('booting');
         powerLed.style.boxShadow = '';
         powerLed.style.animation = '';
         scheduleRedDot();
-    }, 2300);
+    }, 3900);
 
     // --- Text Shatter Effect ---
     var shatterState = { active: false, cooldown: false, chars: [], wasInText: false };
@@ -3154,6 +3154,10 @@
         }, 1050);
 
         setTimeout(function () {
+            if (newBootSource) newBootSource.classList.add('visible');
+        }, 1200);
+
+        setTimeout(function () {
             newBootScreen.style.transition = 'background 0.12s ease';
             newBootScreen.style.background = 'rgba(0, 255, 65, 0.2)';
         }, 1500);
@@ -3163,13 +3167,9 @@
         }, 1620);
 
         setTimeout(function () {
-            if (newBootSource) newBootSource.classList.add('visible');
-        }, 1650);
-
-        setTimeout(function () {
-            newBootScreen.style.transition = 'opacity 0.4s ease-out';
+            newBootScreen.style.transition = 'opacity 0.6s ease-out';
             newBootScreen.style.opacity = '0';
-        }, 1800);
+        }, 3200);
 
         setTimeout(function () {
             if (newBootScreen.parentNode) newBootScreen.parentNode.removeChild(newBootScreen);
@@ -3180,7 +3180,7 @@
             redDot.hasTriggered = false;
             preloadMapbox();
             scheduleRedDot();
-        }, 2300);
+        }, 3900);
     }
 
     // --- LED Random Flicker ---
