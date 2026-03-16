@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>matrix-hello</Name>
+  <Repository>ghcr.io/straplocked/matrix-hello-world:latest</Repository>
+  <Registry>https://github.com/straplocked/matrix-hello-world/pkgs/container/matrix-hello-world</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/straplocked/matrix-hello-world/issues</Support>
+  <Project>https://github.com/straplocked/matrix-hello-world</Project>
+  <Overview>Matrix-themed interactive web visualization with CRT TV aesthetic. Vanilla JS + Three.js + CSS served via nginx. No volumes or configuration needed — everything is baked into the image. CI/CD pushes new images to GHCR on every commit to main.</Overview>
+  <Category>Tools: Other:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/straplocked/matrix-hello-world/main/docs/icon.png</Icon>
+  <ExtraParams>--restart=unless-stopped</ExtraParams>
+  <Description>Matrix-themed interactive web visualization with CRT TV aesthetic. Runs as non-root nginx on port 8080. No volumes or env vars required.</Description>
+  <Config Name="Web Port" Target="8080" Default="8080" Mode="tcp" Description="nginx web server port — map to any host port you like" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+</Container>
