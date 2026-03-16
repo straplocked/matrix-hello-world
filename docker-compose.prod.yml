@@ -1,11 +1,15 @@
-## Local development compose — builds from source
-## For production (Unraid), use docker-compose.prod.yml which pulls from GHCR
+## Production compose for Unraid deployment
+## Pulls pre-built image from GHCR instead of building locally
+##
+## Usage:
+##   docker compose -f docker-compose.prod.yml pull
+##   docker compose -f docker-compose.prod.yml up -d
+##
+## Auto-update: Watchtower will detect new :latest tags pushed by CI/CD
 
 services:
   matrix-hello:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/straplocked/matrix-hello-world:latest
     container_name: matrix-hello
     ports:
       - "0.0.0.0:3001:8080"
@@ -30,3 +34,5 @@ services:
     labels:
       com.straplocked.app: "matrix-hello"
       com.straplocked.port: "3001"
+      com.straplocked.domain: "wakeup.straplocked.com"
+      com.centurylinklabs.watchtower.enable: "true"

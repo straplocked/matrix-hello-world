@@ -1,0 +1,81 @@
+name: Build and Push to GHCR
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t matrix-hello-test .
+
+      - name: Start container
+        run: |
+          docker run -d --name matrix-hello-test -p 3001:8080 matrix-hello-test
+          sleep 3
+
+      - name: Smoke test
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/)
+          echo "HTTP status: $HTTP_CODE"
+          [ "$HTTP_CODE" = "200" ] || exit 1
+
+          # Verify key assets are served
+          curl -sf http://localhost:3001/main.js > /dev/null || exit 1
+          curl -sf http://localhost:3001/style.css > /dev/null || exit 1
+
+          echo "All smoke tests passed"
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f matrix-hello-test || true
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

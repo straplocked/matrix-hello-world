@@ -27,9 +27,20 @@ Interactive Matrix-themed web visualization with CRT TV aesthetic. Vanilla JS + 
 - Parallax: 4-layer Parallax.js + CSS perspective tilt from mouse/gyroscope
 
 ## Deployment
+**CI/CD**: Push to `main` triggers GitHub Actions → builds image → pushes to `ghcr.io/straplocked/matrix-hello-world:latest`
+
+**Production (Unraid)**: Pulls pre-built image from GHCR via `docker-compose.prod.yml`. Watchtower auto-updates on new `:latest` tags.
 ```bash
-sg docker -c "docker compose -f /home/straplocked/prod/matrix-hello/docker-compose.yml up -d --build"
+docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
 ```
+
+**Local dev**: Builds from source via `docker-compose.yml`.
+```bash
+docker compose up -d --build
+```
+
+**Domain**: wakeup.straplocked.com → NPM proxy → Unraid port 3001
+
 Container: non-root nginx, read-only filesystem, all caps dropped, 256MB/1CPU limit.
 
 ## Conventions
