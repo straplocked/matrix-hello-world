@@ -1,5 +1,8 @@
 FROM nginx:1.27-alpine
 
+LABEL org.opencontainers.image.source=https://github.com/straplocked/matrix-hello-world
+LABEL org.opencontainers.image.description="Matrix-themed interactive web visualization"
+
 RUN rm -rf /usr/share/nginx/html/*
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
