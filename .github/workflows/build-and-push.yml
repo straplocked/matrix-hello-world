@@ -20,9 +20,18 @@ jobs:
         run: docker build -t matrix-hello-test .
 
       - name: Start container
+        run: docker run -d --name matrix-hello-test -p 3001:8080 matrix-hello-test
+
+      - name: Wait for container to be ready
         run: |
-          docker run -d --name matrix-hello-test -p 3001:8080 matrix-hello-test
-          sleep 3
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:3001/ > /dev/null 2>&1; then
+              echo "Container ready after ${i}s"
+              break
+            fi
+            echo "Waiting... (${i}/15)"
+            sleep 1
+          done
 
       - name: Smoke test
         run: |
